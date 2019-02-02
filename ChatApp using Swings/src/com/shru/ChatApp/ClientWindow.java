@@ -7,6 +7,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -16,13 +19,20 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.DefaultCaret;
 
-public class ClientWindow  extends JFrame
+public class ClientWindow  extends JFrame implements Runnable
 {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTextField txtMessage;
 	private JTextArea history;
 	private DefaultCaret caret;
+	
+	private boolean running = false;
+	private Thread listen, run; 
 	
 	private Client client;
 	
@@ -43,13 +53,21 @@ public class ClientWindow  extends JFrame
 		String connection = name + " connected from " + address +":" + port; //stuffs entered in login window
 		client.send(connection.getBytes());
 		
-		String trial= "con:" + name;
+		run = new Thread(this, "Running");
+		run.start();
+		running = true;
+		
+		
+		String trial= "/c/" + name;			//connects to the server
 		client.send(trial.getBytes());
 	}	
 	
 	private void createWindow()
 	{
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		//DISPOSE_ON_CLOSE
 		setSize(600,400);
 		setLocationRelativeTo(null);		
 		contentPane = new JPanel();
@@ -88,7 +106,7 @@ public class ClientWindow  extends JFrame
 			{
 				if(e.getKeyCode()==KeyEvent.VK_ENTER)
 				{
-					sendbutton(txtMessage.getText());
+					sendbutton(txtMessage.getText(), true);
 				}
 			}
 		});
@@ -104,35 +122,98 @@ public class ClientWindow  extends JFrame
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) 
 			{
-			 sendbutton(txtMessage.getText());
+			 sendbutton(txtMessage.getText(), true);
 			}
-		});
-		
+		});		
 		
 		GridBagConstraints gbc_btnSend = new GridBagConstraints();
 		gbc_btnSend.insets = new Insets(0, 0, 5, 5);
 		gbc_btnSend.gridx = 2;
 		gbc_btnSend.gridy = 2;
-		contentPane.add(btnSend, gbc_btnSend);
+		contentPane.add(btnSend, gbc_btnSend);		
+		
 		
 		txtMessage.requestFocusInWindow();
 		setVisible(true);	
 		setTitle("Client Window");
+		
+		addWindowListener(new WindowAdapter()
+		{
+			public void windowClosing(WindowEvent e)
+			{
+				System.out.println("closing before");
+
+				String disconnect = "/d/" + client.getID();	
+				sendbutton(disconnect , false);
+				System.out.println(disconnect);
+
+				System.out.println("closing");
+				
+				running=false;
+				client.close();
+				setVisible(false);
+				dispose();
+			}
+		});	
 	}
 	
-	private void sendbutton(String msg)
+	
+	public void run()
+	{
+		listen();
+	}
+	
+	private void sendbutton(String msg , boolean type)
 	{
 		if(msg.equals(""))
 			return;
-		String name= client.getname();
-		msg= name + ": " + msg;
-		console(msg);					//displays message data in the text area
-		
+		if(type)
+		{
+			String name= client.getname();		
+			msg= name + ": " + msg;
+			//console(msg);					//displays message data in the text area
+			msg="/m/" + msg;
+		}
 		client.send(msg.getBytes());		//sending message data through sockets
-		
+		if(!type)
+		{
+			dispose();
+			System.out.println(msg);
+			
+		}
+		client.send("hi".getBytes());
+
 		txtMessage.setText("");
 		
 	}
+	
+	public void listen()
+	{
+		listen = new Thread("LISTEN")
+			{
+				public void run()
+				{
+					
+					while(running)
+					{
+						String message = client.receive();
+						if(message.startsWith("/c/"))
+						{
+							//client.setID(Integer.parseInt(message.substring(4,message.length())));
+							client.setID(Integer.parseInt(message.split("/c/")[1].trim()));
+							console("Successfully connected to Server! \t ID: "+ client.getID());
+						}
+						else if(message.startsWith("/m/"))
+						{
+							String text= message.split("/m/")[1].trim();
+							console(text);
+						}
+					}
+				}
+			};
+			listen.start();
+	}
+	
 	public void console(String msg)
 	{
 		history.append(msg + "\n");

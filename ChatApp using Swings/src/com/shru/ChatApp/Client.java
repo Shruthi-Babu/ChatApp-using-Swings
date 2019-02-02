@@ -17,7 +17,8 @@ public class Client
 	private DatagramSocket socket;
 	private InetAddress ip;
 	private Thread send;	
-	
+	private int ID=-1;
+
 	
 	public Client(String name, String address, int port)
 	{
@@ -56,6 +57,7 @@ public class Client
 			e.printStackTrace();
 		}
 		String message = new String(packet.getData());
+		
 		return message;
 	}
 	
@@ -66,7 +68,7 @@ public class Client
 			{
 			DatagramPacket packet = new DatagramPacket(data, data.length, ip, port); 
 			try {
-				socket.send(packet);		//currently displays stuff on console
+				socket.send(packet);		//currently displays stuff on server(console)
 				} 
 			catch (IOException e) {
 					e.printStackTrace();
@@ -91,6 +93,25 @@ public class Client
 	public String getAddress()
 	{
 		return address;
+	}
+
+
+	public void setID(int ID) 
+	{
+		this.ID=ID;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
+	
+	public void close()
+	{
+		synchronized(socket) {
+			socket.close();
+
+		}
 	}
 	
 

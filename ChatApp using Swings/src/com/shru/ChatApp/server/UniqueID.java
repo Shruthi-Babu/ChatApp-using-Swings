@@ -16,12 +16,12 @@ public class UniqueID
 			ids.add(i);
 		Collections.shuffle(ids);
 	}
-	private UniqueID()
+	public UniqueID()
 	{
 		
 	}
 	
-	public static int getID()
+	public int getID()
 	{
 		if(index>ids.size())
 			index=0;

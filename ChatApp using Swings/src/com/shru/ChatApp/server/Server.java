@@ -10,12 +10,14 @@ import java.util.*;
 
 public class Server implements Runnable
 {
-	private List<ServerClient> clients = new ArrayList<ServerClient>();
+	private List<ServerClient> clientlist = new ArrayList<ServerClient>();
  	
 	private int port;
 	private DatagramSocket socket;	
 	private Thread run, manage, send, receive;
 	private boolean running =false, start;
+	
+	private UniqueID uni;
 	
 	public Server(int port)
 	{
@@ -27,6 +29,7 @@ public class Server implements Runnable
 			e.printStackTrace();
 			return;
 		}
+		uni= new UniqueID();
 		run= new Thread(this, "Server");
 		run.start();
 	}	
@@ -50,22 +53,16 @@ public class Server implements Runnable
 				{
 					byte[] data = new byte[1024];
 					DatagramPacket packet = new DatagramPacket(data, data.length);
-					try {
+					try
+					{
 						socket.receive(packet);
 					} 
 					catch (IOException e) {
 						e.printStackTrace();
 					}
 					//String string = new String(packet.getData());
-					process(packet); //process the received data first to find out whether its a connection packet
-					
-					clients.add(new ServerClient("Shru", packet.getAddress(), packet.getPort(), 50));
-					if(start)	//prints address and port only at the start of the app
-					{
-						System.out.println(clients.get(0).address.toString() + ":" + clients.get(0).port);
-						start=false;
-					
-					}
+
+					process(packet); //process the received data first to find out whether its a connection packet					
 					
 					//System.out.println(string);
 				}
@@ -78,9 +75,9 @@ public class Server implements Runnable
 	
 	private void sendToAll(String message)
 	{
-		for (int i = 0; i < clients.size(); i++)
+		for (int i = 0; i < clientlist.size(); i++)
 		{
-			ServerClient client = clients.get(i);
+			ServerClient client = clientlist.get(i);
 			send(message.getBytes(), client.address, client.port);
 		}
 	}
@@ -107,23 +104,55 @@ public class Server implements Runnable
 	private void process(DatagramPacket packet)
 	{
 		String string = new String(packet.getData());
-		if(string.startsWith("con:"))
+		if(string.startsWith("/c/"))
 		{
-			int id= UniqueID.getID();
-			clients.add(new ServerClient(string.substring(5, string.length()), packet.getAddress(), packet.getPort(), id));
-			System.out.println(string.substring(4, string.length()));
-			System.out.println(id);
+			int id= uni.getID();
+			
+			clientlist.add(new ServerClient(string.substring(3, string.length()), packet.getAddress(), packet.getPort(), id));
+			
+			System.out.println("Client added:" + string.substring(3, string.length()));
+			System.out.println("Client ID: "+ id);			
+
+			String ID= "/c/" + id;	
+			send(ID.getBytes(), packet.getAddress(), packet.getPort());		
 		}
-		else if(string.startsWith("all:"))
+		else if(string.startsWith("/m/"))
 		{
 			sendToAll(string);
 		}
+		else if(string.startsWith("/d/"))
+			{
+			String id= string.split("/d/")[1].trim();
+			disconnect(Integer.parseInt(id), true);
+			}
 		else
 		{
 			System.out.println(string);
 		}
 	}
 	
+	private void disconnect(int id, boolean status)
+	{	String msg= "";
+		ServerClient c = null;
+		for(int i=0;i<clientlist.size();i++)
+		{
+			System.out.println(msg+ "hii");
+
+			if(clientlist.get(i).getId() == id)
+			{
+				c= clientlist.get(i);
+				clientlist.remove(i);
+				break;
+			}
+		}
+		if(status)
+		{
+			msg= "Client disconnected: " + c.name ;
+		}
+		
+
+	}
+
 	private void manageClients()	//keeps sending ping to make sure the clients are responding
 	{
 		manage = new Thread("Manage")
