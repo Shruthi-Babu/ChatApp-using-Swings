@@ -14,8 +14,8 @@ public class Server implements Runnable
  	
 	private int port;
 	private DatagramSocket socket;	
-	private Thread run, manage, send, receive;
-	private boolean running =false, start;
+	private Thread run, send, receive;
+	private boolean running = false, start;
 	
 	private UniqueID uni;
 	
@@ -38,7 +38,7 @@ public class Server implements Runnable
 	{
 		running = true;
 		System.out.println("Server started on port: " +port);
-		manageClients();
+		//manageClients();
 		receive();		
 	}
 	
@@ -101,7 +101,7 @@ public class Server implements Runnable
 		send.start();
 	}
 	
-	private void process(DatagramPacket packet)
+	private void process(DatagramPacket packet) //process datapacket recvd to find whether to connect/disconnect/etc
 	{
 		String string = new String(packet.getData());
 		if(string.startsWith("/c/"))
@@ -136,7 +136,6 @@ public class Server implements Runnable
 		ServerClient c = null;
 		for(int i=0;i<clientlist.size();i++)
 		{
-			System.out.println(msg+ "hii");
 
 			if(clientlist.get(i).getId() == id)
 			{
@@ -148,24 +147,26 @@ public class Server implements Runnable
 		if(status)
 		{
 			msg= "Client disconnected: " + c.name ;
+			System.out.println(msg);
+
 		}
 		
 
 	}
 
-	private void manageClients()	//keeps sending ping to make sure the clients are responding
-	{
-		manage = new Thread("Manage")
-		{
-			public void run()
-			{
-				while(running)
-				{
-						//todo
-				}
-			}
-		};
-		manage.start();
-	}
+//	private void manageClients()	//keeps sending ping to make sure the clients are responding
+//	{
+//		manage = new Thread("Manage")
+//		{
+//			public void run()
+//			{
+//				while(running)
+//				{
+//						//todo
+//				}
+//			}
+//		};
+//		manage.start();
+//	}
 	
 }

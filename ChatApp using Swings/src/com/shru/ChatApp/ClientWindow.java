@@ -141,22 +141,16 @@ public class ClientWindow  extends JFrame implements Runnable
 		{
 			public void windowClosing(WindowEvent e)
 			{
-				System.out.println("closing before");
 
 				String disconnect = "/d/" + client.getID();	
-				sendbutton(disconnect , false);
-				System.out.println(disconnect);
-
-				System.out.println("closing");
-				
+				sendbutton(disconnect , false);			
 				running=false;
 				client.close();
 				setVisible(false);
 				dispose();
 			}
 		});	
-	}
-	
+	}	
 	
 	public void run()
 	{
@@ -170,21 +164,15 @@ public class ClientWindow  extends JFrame implements Runnable
 		if(type)
 		{
 			String name= client.getname();		
-			msg= name + ": " + msg;
-			//console(msg);					//displays message data in the text area
+			msg= name + ": " + msg;		
 			msg="/m/" + msg;
 		}
 		client.send(msg.getBytes());		//sending message data through sockets
 		if(!type)
 		{
 			dispose();
-			System.out.println(msg);
-			
 		}
-		client.send("hi".getBytes());
-
-		txtMessage.setText("");
-		
+		txtMessage.setText("");		
 	}
 	
 	public void listen()
@@ -206,7 +194,7 @@ public class ClientWindow  extends JFrame implements Runnable
 						else if(message.startsWith("/m/"))
 						{
 							String text= message.split("/m/")[1].trim();
-							console(text);
+							console(text);	//displays message data in the text area
 						}
 					}
 				}
